@@ -17,3 +17,7 @@ sitemap = "0.4.1"
 texting_robots = "0.2.1"
 toml = "0.5.9"
 url = { version = "2.2.2", features = ["serde"] }
+
+[dev-dependencies]
+filetime = "0.2.16"
+snapbox = { version = "0.2.9", features = ["path"] }
