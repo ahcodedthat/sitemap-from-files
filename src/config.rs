@@ -9,7 +9,7 @@ use url::Url;
 pub struct Config {
 	pub root_dir: PathBuf,
 	pub root_url: Url,
-	pub sitemap_path: PathBuf,
+	pub sitemap_path: Option<PathBuf>,
 	#[serde(rename = "rule")]
 	pub rules: Vec<Rule>,
 }
@@ -20,10 +20,11 @@ impl Config {
 			config_file_path.parent()
 			.context("configuration file path doesn't have a parent")?;
 
-		for path in [&mut self.root_dir, &mut self.sitemap_path] {
+		for path in [Some(&mut self.root_dir), self.sitemap_path.as_mut()] {
+		if let Some(path) = path {
 		if !path.is_absolute() {
 			*path = parent.join(&*path);
-		}}
+		}}}
 
 		Ok(())
 	}

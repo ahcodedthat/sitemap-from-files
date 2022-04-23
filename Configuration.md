@@ -60,11 +60,13 @@ This is the base URL of your website. The URL must be absolute.
 
 ```toml
 # Type: string
-# Required
+# Optional
 sitemap_path = "path/to/site/sitemap.xml"
 ```
 
 This is the path to the sitemap file that `sitemap-from-files` will generate.
+
+If this field is not present, the sitemap will be written to standard output instead of a file. This can be overridden by the command-line option `-o`.
 
 Just like `root_dir`, this path can be relative to the configuration file. So, if your files are at `/home/me/mysite/public` and the configuration file is at `/home/me/mysite/sitemap-from-files.toml`, then you can just write:
 

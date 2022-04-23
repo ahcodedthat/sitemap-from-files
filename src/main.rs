@@ -1,3 +1,4 @@
+mod cmd;
 mod config;
 mod rules;
 mod scan;
@@ -7,16 +8,14 @@ const MAX_SITEMAP_BYTES: usize = 52_428_800;
 
 fn main() -> anyhow::Result<()> {
 	use anyhow::Context as _;
-	use std::path::PathBuf;
+	use self::cmd::OutputTo;
+	use std::{
+		fs,
+		io::{self, Write as _},
+		path::PathBuf,
+	};
 
-	/// Generates an XML sitemap (according to the sitemaps.org protocol) from a collection of files.
-	#[derive(clap::Parser)]
-	struct Cmd {
-		/// Path to the configuration file.
-		config_file: PathBuf,
-	}
-
-	let mut cmd = <Cmd as clap::Parser>::parse();
+	let mut cmd = <self::cmd::Cmd as clap::Parser>::parse();
 
 	let cwd: anyhow::Result<PathBuf> =
 		std::env::current_dir()
@@ -61,10 +60,16 @@ fn main() -> anyhow::Result<()> {
 		sitemap.len(),
 	);
 
-	std::fs::write(
-		cfg.sitemap_path.as_path(),
-		sitemap.as_slice(),
-	)
+	match cmd.output(&cfg) {
+		OutputTo::Stdout => {
+			let stdout = io::stdout();
+			let mut stdout = stdout.lock();
+			stdout.write_all(sitemap.as_slice())
+			.and_then(|_| stdout.flush())
+		}
+
+		OutputTo::File(path) => fs::write(&*path, sitemap.as_slice()),
+	}
 	.context("couldn't write sitemap file")?;
 
 	Ok(())
