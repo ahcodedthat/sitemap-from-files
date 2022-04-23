@@ -50,7 +50,6 @@ impl<'c, W: Write> Scan<'c, W> {
 		let mut scanner = Scanner {
 			s: self,
 			root_dir_url: &root_dir_url,
-			robots_path: robots_path.as_path(),
 			robot: &robot,
 			rules: &rules,
 			url_count: 0,
@@ -60,7 +59,6 @@ impl<'c, W: Write> Scan<'c, W> {
 }
 
 struct Scanner<'a, W: Write> {
-	robots_path: &'a Path,
 	robot: &'a Option<texting_robots::Robot>,
 	root_dir_url: &'a Url,
 	rules: &'a Rules<'a>,
