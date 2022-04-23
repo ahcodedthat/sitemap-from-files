@@ -1,0 +1,19 @@
+[package]
+name = "sitemap-from-files"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+keywords = ["sitemap"]
+
+[dependencies]
+anyhow = "1.0.57"
+chrono = "0.4"
+clap = { version = "3.1.11", features = ["derive"] }
+derive_more = "0.99.17"
+regex = "1.5.5"
+serde = { version = "1.0.136", features = ["derive"] }
+serde_regex = "1.1.0"
+sitemap = "0.4.1"
+texting_robots = "0.2.1"
+toml = "0.5.9"
+url = { version = "2.2.2", features = ["serde"] }

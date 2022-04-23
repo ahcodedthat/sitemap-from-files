@@ -1,0 +1,15 @@
+root_dir = "site"
+root_url = "https://www.example.com/"
+sitemap_path = "sitemap.xml"
+
+[[rule]]
+match = '\.html$'
+include = true
+
+[[rule]]
+match = '(^|/)index\.html$'
+replace = '$1'
+
+[[rule]]
+match = '^secret/'
+include = false
