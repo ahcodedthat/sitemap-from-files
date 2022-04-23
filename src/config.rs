@@ -33,18 +33,8 @@ impl Config {
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Rule {
-	/// A regular expression that must match the URL-path for this rule to be applied.
-	///
-	/// URL-paths never begin with a slash and always end with the file name. For example, if:
-	///
-	/// * you're running this program on Windows,
-	/// * the `root_dir` is `C:\Users\Mister Rogers\Documents\My Site`, and
-	/// * the file being considered is `C:\Users\Mister Rogers\Documents\My Site\neighbors\you.html`,
-	///
-	/// then this regex will be matched against the string `neighbors/you.html`.
 	#[serde(with = "serde_regex")]
 	pub r#match: Regex,
-
 	pub replace: Option<String>,
 	#[serde(default = "Rule::default_replace_limit")]
 	pub replace_limit: usize,
