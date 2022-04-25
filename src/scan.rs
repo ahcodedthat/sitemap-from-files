@@ -5,6 +5,7 @@ use crate::{
 	rules::Rules,
 };
 use std::{
+	cmp::Ordering,
 	fs::{self, File},
 	io::{self, Write},
 	path::{Path, PathBuf},
@@ -54,9 +55,37 @@ impl<'c, W: Write> Scan<'c, W> {
 			root_dir_url: &root_dir_url,
 			robot: &robot,
 			rules: &rules,
-			url_count: 0,
+			urls: Vec::new(),
 		};
-		scanner.scan_dir(scanner.s.cfg.root_dir.as_path())
+		scanner.scan_dir(scanner.s.cfg.root_dir.as_path())?;
+
+		scanner.urls.sort_by(|a, b| {
+			use sitemap::structs::Location;
+
+			match (&a.loc, &b.loc) {
+				(Location::None, Location::None)
+				| (Location::ParseErr(_), Location::ParseErr(_))
+				=> Ordering::Equal,
+
+				(Location::None, _)
+				| (_, Location::ParseErr(_))
+				=> Ordering::Less,
+
+				(_, Location::None)
+				| (Location::ParseErr(_), _)
+				=> Ordering::Greater,
+
+				(Location::Url(a), Location::Url(b))
+				=> a.cmp(b),
+			}
+		});
+
+		for url in scanner.urls {
+			scanner.s.w.url(url)
+			.context("couldn't write sitemap entry")?;
+		}
+
+		Ok(())
 	}
 }
 
@@ -65,7 +94,7 @@ struct Scanner<'a, W: Write> {
 	root_dir_url: &'a Url,
 	rules: &'a Rules<'a>,
 	s: Scan<'a, W>,
-	url_count: u16,
+	urls: Vec<sitemap::structs::UrlEntry>,
 }
 
 impl<'a, W: Write> Scanner<'a, W> {
@@ -150,14 +179,6 @@ impl<'a, W: Write> Scanner<'a, W> {
 			// We can close the file now.
 			drop(fd);
 
-			// Make sure not to exceed 50k URLs.
-			self.url_count = self.url_count.saturating_add(1);
-
-			anyhow::ensure!(
-				self.url_count <= MAX_SITEMAP_URLS,
-				"more than {MAX_SITEMAP_URLS} files are to be included in the sitemap, which is not allowed by the sitemaps protocol; please divide the files into multiple sitemaps and join them together in a sitemap index",
-			);
-
 			// Start constructing a `UrlEntry`.
 			let mut entry = sitemap::structs::UrlEntry::builder();
 			entry = entry.loc(web_url);
@@ -185,11 +206,16 @@ impl<'a, W: Write> Scanner<'a, W> {
 			}
 
 			// Insert it.
-			self.s.w.url(
+			self.urls.push(
 				entry.build()
 				.context("couldn't generate sitemap entry")?
-			)
-			.context("couldn't write sitemap entry")?;
+			);
+
+			// Make sure not to exceed 50k URLs.
+			anyhow::ensure!(
+				self.urls.len() <= MAX_SITEMAP_URLS,
+				"more than {MAX_SITEMAP_URLS} files are to be included in the sitemap, which is not allowed by the sitemaps protocol; please divide the files into multiple sitemaps and join them together in a sitemap index",
+			);
 		}
 
 		Ok(())

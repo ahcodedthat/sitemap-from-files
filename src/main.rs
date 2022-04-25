@@ -3,7 +3,7 @@ mod config;
 mod rules;
 mod scan;
 
-const MAX_SITEMAP_URLS: u16 = 50_000;
+const MAX_SITEMAP_URLS: usize = 50_000;
 const MAX_SITEMAP_BYTES: usize = 52_428_800;
 
 fn main() -> anyhow::Result<()> {
