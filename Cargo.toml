@@ -9,6 +9,8 @@ keywords = ["sitemap"]
 anyhow = "1.0.57"
 chrono = "0.4"
 clap = { version = "3.1.11", features = ["derive"] }
+html5ever = "0.26.0"
+markup5ever = "0.11.0"
 regex = "1.5.5"
 serde = { version = "1.0.136", features = ["derive"] }
 serde_regex = "1.1.0"

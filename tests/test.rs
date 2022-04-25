@@ -14,7 +14,7 @@ fn test() {
 	for (f, t) in [
 		(&["site", "foo", "bar.html"][..], 101),
 		(&["site", "index.html"][..], 42),
-		(&["site", "index.txt"][..], 9999),
+		(&["site", "index.txt"][..], 54),
 		(&["site", "secret", "secrets.html"][..], 0xdeadbeef),
 		(&["site", "super-secret", "more-secrets.html"][..], 0xdeadbeef),
 	] {

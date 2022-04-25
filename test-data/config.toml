@@ -3,8 +3,16 @@ root_url = "https://www.example.com/"
 sitemap_path = "sitemap.xml"
 
 [[rule]]
-match = '\.html$'
+match = '\.(html|txt)$'
 include = true
+
+[[rule]]
+match = '\.html$'
+check_html_meta_robots = true
+
+[[rule]]
+match = '^robots\.txt$'
+include = false
 
 [[rule]]
 match = '(^|/)index\.html$'

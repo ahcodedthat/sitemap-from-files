@@ -39,6 +39,7 @@ pub struct Rule {
 	#[serde(default = "Rule::default_replace_limit")]
 	pub replace_limit: usize,
 	pub include: Option<bool>,
+	pub check_html_meta_robots: Option<bool>,
 }
 
 impl Rule {

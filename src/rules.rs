@@ -32,6 +32,7 @@ impl<'c> Rules<'c> {
 		let mut applied = AppliedRules {
 			replacing_rule: None,
 			path: Cow::Borrowed(path),
+			check_html_meta_robots: false,
 		};
 		let mut replace: Option<(&'c Rule, &'c str)> = None;
 
@@ -43,6 +44,10 @@ impl<'c> Rules<'c> {
 
 			if let Some(matching_replace) = &matching_rule.replace {
 				replace = Some((matching_rule, matching_replace.as_str()));
+			}
+
+			if let Some(flag) = matching_rule.check_html_meta_robots {
+				applied.check_html_meta_robots = flag;
 			}
 		}
 
@@ -67,4 +72,7 @@ pub struct AppliedRules<'c, 'p> {
 
 	/// The new URL-path for the sitemap entry. Will be [`Cow::Owned`] if the path has been subjected to replacement, or [`Cow::Borrowed`] if not.
 	pub path: Cow<'p, str>,
+
+	/// Whether to try to parse the file as HTML and look for `<meta name=robots>`.
+	pub check_html_meta_robots: bool,
 }

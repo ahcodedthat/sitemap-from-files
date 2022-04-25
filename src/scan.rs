@@ -11,6 +11,8 @@ use std::{
 };
 use url::Url;
 
+mod check_html_meta;
+
 pub struct Scan<'c, W: Write> {
 	pub cfg: &'c Config,
 	pub cfg_path: &'c Path,
@@ -85,15 +87,13 @@ impl<'a, W: Write> Scanner<'a, W> {
 				continue;
 			}
 
-			let fd =
+			let mut fd =
 				File::open(dent_path.as_path())
 				.with_context(|| format!("couldn't open file `{}`", dent_path.display()))?;
 
 			let md =
 				fd.metadata()
 				.with_context(|| format!("couldn't get file system metadata for file `{}`", dent_path.display()))?;
-
-			drop(fd);
 
 			if !md.is_file() {
 				continue;
@@ -135,6 +135,20 @@ impl<'a, W: Write> Scanner<'a, W> {
 			if !robot.allowed(format!("/{url_rel}").as_str()) {
 				continue;
 			}}
+
+			// If this file is HTML, check it for `<meta name=robots>`.
+			if applied_rules.check_html_meta_robots {
+				let html_meta =
+					self::check_html_meta::HtmlMeta::read(&mut fd)
+					.with_context(|| format!("couldn't read HTML file `{}`", dent_path.display()))?;
+
+				if html_meta.no_index {
+					continue;
+				}
+			}
+
+			// We can close the file now.
+			drop(fd);
 
 			// Make sure not to exceed 50k URLs.
 			self.url_count = self.url_count.saturating_add(1);

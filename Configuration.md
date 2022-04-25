@@ -191,3 +191,17 @@ replace_limit = 2
 If this rule is applied to the URL-path `one/two/three/four.html`, the result will be `one_two_three/four.html`.
 
 `replace_limit` has no effect unless the rule it appears in also has a `replace` field.
+
+### `check_html_meta_robots`
+
+```toml
+[[rule]]
+match = '…'
+# Type: boolean
+# Optional
+check_html_meta_robots = true
+```
+
+If true, files matched by this rule will be parsed as UTF-8 HTML. If such a file contains a `<meta name=robots>` element whose `content` attribute contains `noindex`, then it will be excluded from the sitemap.
+
+Don't enable this for anything other than HTML files that are encoded in ASCII or UTF-8. (It may also work with other ASCII-compatible encodings such as ISO 8859, but that is not guaranteed.) This limitation exists because [the `html5ever` HTML parser library does not currently implement](https://github.com/servo/html5ever/issues/18) the [HTML5 encoding sniffing algorithm](https://html.spec.whatwg.org/multipage/parsing.html#encoding-sniffing-algorithm) and there is no other reliable way to detect the encoding of an HTML file.
