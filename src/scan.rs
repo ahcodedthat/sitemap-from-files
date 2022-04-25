@@ -2,7 +2,7 @@ use anyhow::Context as _;
 use crate::{
 	config::Config,
 	MAX_SITEMAP_URLS,
-	rules::{AppliedRules, Rules},
+	rules::Rules,
 };
 use std::{
 	fs::{self, File},
@@ -110,15 +110,18 @@ impl<'a, W: Write> Scanner<'a, W> {
 				.unwrap_or_else(|| panic!("the URL `{file_url}` could not be made relative to the URL `{}`", self.root_dir_url));
 
 			// A relative URL, with replacements applied.
-			let url_rel_replaced = match self.rules.apply(url_rel.as_str()) {
-				AppliedRules::Exclude => continue,
-				AppliedRules::Include { replacing_rule: _, path } => path,
+			let applied_rules = match self.rules.apply(url_rel.as_str()) {
+				Some(ok) => ok,
+				None => continue,
 			};
 
 			// The absolute URL of the file, as it will appear on the web.
 			let web_url =
-				self.s.cfg.root_url.join(&*url_rel_replaced)
-				.with_context(|| format!("applying configured replacements to `{url_rel}` yielded `{url_rel_replaced}`, which is not a valid relative URL"))?;
+				self.s.cfg.root_url.join(&*applied_rules.path)
+				.with_context(|| format!(
+					"applying configured replacements to `{url_rel}` yielded `{}`, which is not a valid relative URL",
+					applied_rules.path,
+				))?;
 
 			anyhow::ensure!(
 				web_url.as_str().starts_with(self.s.cfg.root_url.as_str()),

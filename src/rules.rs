@@ -18,15 +18,22 @@ impl<'c> Rules<'c> {
 		Self { config, regex_set }
 	}
 
-	pub fn apply<'p, 's>(&'s self, path: &'p str) -> AppliedRules<'s, 'p> {
+	/// Determines what behavior should be used for the file at the given `path`.
+	///
+	/// The return value is `None` if the rules say to exclude the file from the sitemap, or `Some` if they say to include it.
+	pub fn apply<'p, 's>(&'s self, path: &'p str) -> Option<AppliedRules<'s, 'p>> {
 		let matching_rules = self.regex_set.matches(path);
 
 		if !matching_rules.matched_any() {
-			return AppliedRules::Exclude;
+			return None;
 		}
 
 		let mut include = false;
-		let mut replacing_rule: Option<(&'c Rule, &'c str)> = None;
+		let mut applied = AppliedRules {
+			replacing_rule: None,
+			path: Cow::Borrowed(path),
+		};
+		let mut replace: Option<(&'c Rule, &'c str)> = None;
 
 		for matching_rule in matching_rules {
 			// `matching_rule` is currently an index into the `Config::rules` array. Look it up.
@@ -34,39 +41,30 @@ impl<'c> Rules<'c> {
 
 			include = matching_rule.include.unwrap_or(include);
 
-			if let Some(replace) = &matching_rule.replace {
-				replacing_rule = Some((matching_rule, replace.as_str()));
+			if let Some(matching_replace) = &matching_rule.replace {
+				replace = Some((matching_rule, matching_replace.as_str()));
 			}
 		}
 
 		if !include {
-			return AppliedRules::Exclude;
+			return None;
 		}
 
-		let path: Cow<'p, str> = match replacing_rule {
-			None => Cow::Borrowed(path),
-			Some((replacing_rule, replace)) =>
+		if let Some((replacing_rule, replace)) = replace {
+			applied.replacing_rule = Some(replacing_rule);
+			applied.path =
 				replacing_rule.r#match
-				.replacen(path, replacing_rule.replace_limit, replace),
-		};
-
-		AppliedRules::Include {
-			replacing_rule: replacing_rule.map(|(r, _)| r),
-			path,
+				.replacen(path, replacing_rule.replace_limit, replace);
 		}
+
+		Some(applied)
 	}
 }
 
-pub enum AppliedRules<'c, 'p> {
-	/// This file is *not* to be included in the sitemap.
-	Exclude,
+pub struct AppliedRules<'c, 'p> {
+	/// The rule whose [`Rule::replace`] has been applied. `None` if none of the matching rules have a `replace`.
+	pub replacing_rule: Option<&'c Rule>,
 
-	/// This file is to be included in the sitemap.
-	Include {
-		/// The rule whose [`Rule::replace`] has been applied. `None` if none of the matching rules have a `replace`.
-		replacing_rule: Option<&'c Rule>,
-
-		/// The new URL-path for the sitemap entry. Will be [`Cow::Owned`] if the path has been subjected to replacement, or [`Cow::Borrowed`] if not.
-		path: Cow<'p, str>,
-	},
+	/// The new URL-path for the sitemap entry. Will be [`Cow::Owned`] if the path has been subjected to replacement, or [`Cow::Borrowed`] if not.
+	pub path: Cow<'p, str>,
 }
