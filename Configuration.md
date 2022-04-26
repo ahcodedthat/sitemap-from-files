@@ -56,7 +56,7 @@ root_url = "https://www.example.com/"
 
 This is the base URL of your website. The URL must be absolute.
 
-#### `sitemap_path`
+### `sitemap_path`
 
 ```toml
 # Type: string
