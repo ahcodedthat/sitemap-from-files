@@ -11,6 +11,10 @@ pub struct Cmd {
 	#[clap(short, long)]
 	pub output: Option<OutputTo<'static>>,
 
+	/// Explain why files are excluded from the sitemap.
+	#[clap(short, long)]
+	pub verbose: bool,
+
 	/// Path to the configuration file.
 	pub config_file: PathBuf,
 }

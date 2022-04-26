@@ -1,11 +1,13 @@
 use anyhow::Context as _;
 use crate::{
 	config::Config,
+	cmd::Cmd,
 	MAX_SITEMAP_URLS,
 	rules::Rules,
 };
 use std::{
 	cmp::Ordering,
+	fmt::Display,
 	fs::{self, File},
 	io::{self, Write},
 	path::{Path, PathBuf},
@@ -15,6 +17,7 @@ use url::Url;
 mod check_html_meta;
 
 pub struct Scan<'c, W: Write> {
+	pub cmd: &'c Cmd,
 	pub cfg: &'c Config,
 	pub cfg_path: &'c Path,
 	pub w: &'c mut sitemap::writer::UrlSetWriter<W>,
@@ -107,6 +110,12 @@ impl<'a, W: Write> Scanner<'a, W> {
 			let dent = dent.with_context(|| format!("couldn't read folder `{}`", dir.display()))?;
 			let dent_path = dent.path();
 
+			let explain_exclude = |reason: &dyn Display| -> () {
+				if self.s.cmd.verbose {
+					eprintln!("Excluding file `{}`. {reason}", dent_path.display());
+				}
+			};
+
 			let dent_type =
 				dent.file_type()
 				.with_context(|| format!("couldn't get file type of `{}`", dent_path.display()))?;
@@ -125,6 +134,7 @@ impl<'a, W: Write> Scanner<'a, W> {
 				.with_context(|| format!("couldn't get file system metadata for file `{}`", dent_path.display()))?;
 
 			if !md.is_file() {
+				explain_exclude(&"It is not a regular file.");
 				continue;
 			}
 
@@ -138,10 +148,19 @@ impl<'a, W: Write> Scanner<'a, W> {
 				self.root_dir_url.make_relative(&file_url)
 				.unwrap_or_else(|| panic!("the URL `{file_url}` could not be made relative to the URL `{}`", self.root_dir_url));
 
+			let explain_exclude = |reason: &dyn Display| -> () {
+				if self.s.cmd.verbose {
+					eprintln!("Excluding `{url_rel}` (at file path `{}`). {reason}", dent_path.display());
+				}
+			};
+
 			// A relative URL, with replacements applied.
 			let applied_rules = match self.rules.apply(url_rel.as_str()) {
 				Some(ok) => ok,
-				None => continue,
+				None => {
+					explain_exclude(&"The rules don't say to include it.");
+					continue
+				}
 			};
 
 			// The absolute URL of the file, as it will appear on the web.
@@ -162,6 +181,7 @@ impl<'a, W: Write> Scanner<'a, W> {
 			// Check if this file is excluded by the robots file. Note that the robots protocol expects a leading slash, and `Url::make_relative` makes a string *without* a leading slash, so we'll have to copy the whole URL-path into a new string with such a slash.
 			if let Some(robot) = self.robot {
 			if !robot.allowed(format!("/{url_rel}").as_str()) {
+				explain_exclude(&format_args!("`robots.txt` says to exclude it."));
 				continue;
 			}}
 
@@ -172,6 +192,7 @@ impl<'a, W: Write> Scanner<'a, W> {
 					.with_context(|| format!("couldn't read HTML file `{}`", dent_path.display()))?;
 
 				if html_meta.no_index {
+					explain_exclude(&"It's an HTML page with `<meta name=robots content=noindex>`.");
 					continue;
 				}
 			}

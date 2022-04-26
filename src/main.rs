@@ -47,6 +47,7 @@ fn main() -> anyhow::Result<()> {
 		.unwrap();
 
 	self::scan::Scan {
+		cmd: &cmd,
 		cfg: &cfg,
 		cfg_path: cmd.config_file.as_path(),
 		w: &mut sitemap_writer,
