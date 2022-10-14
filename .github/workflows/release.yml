@@ -1,0 +1,74 @@
+name: release
+
+on:
+ push:
+  tags:
+  - "v[0-9]+.*"
+
+env:
+ CARGO_TERM_COLOR: always
+
+permissions:
+ # needed by softprops/action-gh-release@v1
+ contents: write
+
+jobs:
+ build:
+  strategy:
+   matrix:
+    target:
+    - x86_64-unknown-linux-gnu
+    - x86_64-apple-darwin
+    - x86_64-pc-windows-msvc
+    include:
+    - target: x86_64-unknown-linux-gnu
+      runner: ubuntu-latest
+      os_family: linux
+      machine: x86_64
+      exe_suffix: ""
+      archive_suffix: xz
+    - target: x86_64-apple-darwin
+      runner: macos-latest
+      os_family: macos
+      machine: x86_64
+      exe_suffix: ""
+      archive_suffix: xz
+    - target: x86_64-pc-windows-msvc
+      runner: windows-latest
+      os_family: windows
+      machine: x86_64
+      exe_suffix: ".exe"
+      archive_suffix: zip
+
+  runs-on: ${{ matrix.runner }}
+
+  steps:
+
+  - name: checkout
+    uses: actions/checkout@v3
+
+  - name: run tests
+    run: cargo test --target ${{ matrix.target }}
+
+  - name: build
+    run: cargo build --release --target ${{ matrix.target }}
+
+  - name: package
+    shell: bash
+    run: |
+     exe_name="sitemap-from-files-${{ matrix.os_family }}-${{ matrix.machine }}"
+
+     cd "target/${{ matrix.target }}/release"
+     mv "sitemap-from-files${{ matrix.exe_suffix }}" "${exe_name}${{ matrix.exe_suffix }}"
+
+     if [ "${{ matrix.os_family }}" = "windows" ]; then
+      7z a "${exe_name}.zip" "${exe_name}${{ matrix.exe_suffix }}"
+     else
+      xz -kf "${exe_name}${{ matrix.exe_suffix }}"
+     fi
+
+  - name: release
+    uses: softprops/action-gh-release@v1
+    with:
+     files: |
+      target/${{ matrix.target }}/release/sitemap-from-files-${{ matrix.os_family }}-${{ matrix.machine }}.${{ matrix.archive_suffix }}
