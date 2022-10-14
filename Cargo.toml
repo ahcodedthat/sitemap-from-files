@@ -22,3 +22,10 @@ url = { version = "2.2.2", features = ["serde"] }
 [dev-dependencies]
 filetime = "0.2.16"
 snapbox = { version = "0.2.9", features = ["path"] }
+
+[profile.release]
+debug = 0
+lto = "thin"
+panic = "abort"
+opt-level = "s"
+strip = true
